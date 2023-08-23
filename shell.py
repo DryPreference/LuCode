@@ -1,5 +1,5 @@
 import Lucode
-print("Welcome to Lucode Version 1.0 \nTo Exit type quit \n")
+print("Welcome to Lucode Version 0.1B \nTo Exit type quit \n")
 
 while True:
 		text = input('Lucode_V1.0 --> ')
