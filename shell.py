@@ -1,13 +1,13 @@
-import Lucode
-print("Welcome to Lucode Version 0.1B \nTo Exit type quit \n")
+import lucode
+
+print("Beta Lucode V0.1 -- To exit type 'quit' \nThis is a personal project if you have any suggestions please contact me at: lukas.lschn.schneider@fau.de")
 
 while True:
-		text = input('Lucode_V1.0 --> ')
-		result, error = Lucode.run('<stdin>', text)
-		if text == "quit":
-			break
+    text = input('lucode_V1.0_--> ')
+    result, error = lucode.run('<stdin>', text)
 
-		if error: 
-			print(error.as_string())
-		else:
-			 print(result)
+    if text == 'quit' :
+        break
+    
+    if error: print(error.as_string())
+    else: print(result)
