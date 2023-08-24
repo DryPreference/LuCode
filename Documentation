@@ -9,7 +9,6 @@
 
   POWEROP   : atom (POWEROP factor)*
 
-  factorial : atom (factor factorial)
 
 
   atom      : INT|FLOAT
