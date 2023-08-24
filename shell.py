@@ -1,10 +1,10 @@
-import lucode
+import Lucode
 
-print("Beta Lucode V0.1 -- To exit type 'quit' \nThis is a personal project if you have any suggestions please contact me at: lukas.lschn.schneider@fau.de")
+print("\nBeta Lucode V0.3 -- To exit type 'quit' \nThis is a personal project if you have any suggestions please contact me at: lukas.lschn.schneider@fau.de\n")
 
 while True:
-    text = input('lucode_V1.0_--> ')
-    result, error = lucode.run('<stdin>', text)
+    text = input('(Beta)lucode_V0.3 --> ')
+    result, error = Lucode.run('<stdin>', text)
 
     if text == 'quit' :
         break
