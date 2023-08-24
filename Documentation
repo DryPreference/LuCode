@@ -48,19 +48,3 @@
 5. Token Class
     __init__() function This is only used to initiate type_ and value these are going to be used later in this class and function
 
-
-
-## Add new Operator - A HOW TO GUIDE
-
-1.  Update # Syntax 
-2.  crate a new Token. and add to make_tokens
-2a. create new function in Parser that returns return self.bin_op(self.atom, (TOKEN, ), self.factor)
-3.  Update Number Class - create new method that executes the new operator
-3a. Update the Interpreter/visit_BinOpNode and add the binary operation
-
-
-## Adding Variables
-
-1. Update the Tokens (Identifier, Keyword, EQ)
-2. Updating the Lexer and add the TOKEN
-3. 
