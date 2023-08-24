@@ -438,7 +438,7 @@ class Interpreter:
 
 	def visit_NumberNode(self, node, context):
 		return RTResult().success(
-			Number(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end) ##LCS
+			Number(node.tok.value).set_context(context).set_pos(node.pos_start, node.pos_end) 
 		)
 		
 	def visit_BinOpNode(self, node, context):
@@ -462,9 +462,6 @@ class Interpreter:
 
 		elif node.op_tok.type == POW:
 			result, error = left.powed_by(right)
-
-		elif node.op_tok.type == FAC:
-			result, error = left.fact_by(right)
 		
 		if error: 
 			return res.failure(error)
