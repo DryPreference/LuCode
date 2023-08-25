@@ -12,7 +12,7 @@
 
 
 
-  atom      : INT|FLOAT
+  atom      : INT|FLOAT|IDENTIFIER
             : LPAREN expr RPAREN
 
 
