@@ -101,10 +101,21 @@ POW 	= 'POWEROPERATOR'
 IDENTIFIER = 'IDENTIFIER'
 KEYWORD = 'KEYWORD'
 EQUALS = 'EQUALS'
+EE = 'EE'
+NE = 'NE'
+LT = 'LT'
+GT = 'GT'
+LTE = 'LTE'
+GTE = 'GTE'
+
+
 
 
 KEYWORDS = [
-	'var'
+	'var',
+	'and',
+	'or',
+	'not'
 ]
 
 class Token:
@@ -177,6 +188,17 @@ class Lexer:
 			elif self.current_char == '=':
 				tokens.append(Token(EQUALS, pos_start=self.pos))
 				self.advance()
+
+			elif self.current_char == '=':
+				tokens.append(self.make_equals())
+			elif self.current_char == '<':
+				tokens.append(self.make_less_than())
+			elif self.current_char == '>':
+				tokens.append(self.make_greater_then())
+			elif self.current_char == '!':
+				tok, error = self.make_not_equals()
+				if error: return [], error
+				tokens.append(tok)
 			else:
 				pos_start = self.pos.copy()
 				char = self.current_char
@@ -214,6 +236,50 @@ class Lexer:
 		tok_type = KEYWORD if id_str in KEYWORDS else IDENTIFIER #LCS
 		return Token(tok_type, id_str, pos_start, self.pos)
 
+
+	def make_not_equals(self):
+		pos_start = self.pos.copy()
+		self.advance()
+
+		if self.current_char == '=':
+			self.advance()
+			return Token(NE, pos_start=pos_start, pos_end=self.pos), None
+		
+		self.advance()
+		return None, ExpectedCharError(pos_start, self.pos, "'=' (after '!') did you mean == ?")
+	
+	def make_equals(self):
+		tok_type = EQUALS
+		pos_start = self.pos.copy()
+		self.advance()
+
+		if self.current_char == '=':
+			self.advance()
+			tok_type = EE
+
+		return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+	
+	def make_less_than(self):
+		tok_type = LT
+		pos_start = self.pos.copy()
+		self.advance()
+
+		if self.current_char == '=':
+			self.advance()
+			tok_type = LTE
+
+		return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
+	
+	def make_greater_than(self):
+		tok_type = GT
+		pos_start = self.pos.copy()
+		self.advance()
+
+		if self.current_char == '=':
+			self.advance()
+			tok_type = GTE
+
+		return Token(tok_type, pos_start=pos_start, pos_end=self.pos)
 #######################################
 # NODES
 #######################################
@@ -370,6 +436,30 @@ class Parser:
 
 	def term(self):
 		return self.bin_op(self.factor, (MUL, DIV))
+	
+	def arith_expr(self):
+		return self.bin_op(self.term, (PLUS, MINUS))
+	
+	def comp_expr(self):
+		res = ParseResult()
+
+		if self.current_tok.matches(KEYWORD, 'not'):
+			op_tok = self.current_tok
+			res.register_advancement()
+			self.advance()
+
+
+			node = res.register(self.comp_expr())
+			if res.error: return res
+			return res.success(UnaryOpNode(op_tok, node))
+
+		node = res.register(self.bin_op(self.arith_expr, (EE, NE, LT, GT, LTE, GTE)))
+
+		if res.error:
+			return res.failure(InvalidSyntaxError(
+				self.current_tok.pos_start, self.current_tok.pos_end,
+				"Expected int, float, identifier, '+', '-', '(' or 'not'"
+			))
 
 	def expr(self):
 		res = ParseResult()
@@ -400,12 +490,12 @@ class Parser:
 			if res.error: return res
 			return res.success(VarAssignNode(var_name, expr))
 
-		node = res.register(self.bin_op(self.term, (PLUS, MINUS)))
+		node = res.register(self.bin_op(self.comp_expr, ((KEYWORD, "and"), (KEYWORD, "or"))))
 
 		if res.error:
 			return res.failure(InvalidSyntaxError(
 			self.current_tok.pos_start, self.current_tok.pos_end,
-			"Expected 'var', int, float, identifier, '+', '-' or '()'"
+			"Expected int, float, identifier, '+', '-', '(' or 'not'"
 		))
 
 		return res.success(node)
@@ -419,7 +509,7 @@ class Parser:
 		left = res.register(func_a())
 		if res.error: return res
 
-		while self.current_tok.type in ops:
+		while self.current_tok.type in ops or (self.current_tok.type, self.current_tok.value) in ops:
 			op_tok = self.current_tok
 			res.register_advancement()
 			self.advance()
