@@ -33,6 +33,10 @@ class IllegalCharError(Error):
 	def __init__(self, pos_start, pos_end, details):
 		super().__init__(pos_start, pos_end, 'Illegal Character', details)
 
+class ExpectedCharError(Error):
+	def __init__(self, pos_start, pos_end, details):
+		super().__init__(pos_start, pos_end, 'Expected Character', details)
+
 class InvalidSyntaxError(Error):
 	def __init__(self, pos_start, pos_end, details=''):
 		super().__init__(pos_start, pos_end, 'Invalid Syntax', details)
@@ -160,10 +164,10 @@ class Lexer:
 		while self.current_char != None:
 			if self.current_char in ' \t':
 				self.advance()
-			elif self.current_char in LETTERS:
-				tokens.append(self.make_identifier())
 			elif self.current_char in DIGITS:
 				tokens.append(self.make_number())
+			elif self.current_char in LETTERS:
+				tokens.append(self.make_identifier())
 			elif self.current_char == '+':
 				tokens.append(Token(PLUS, pos_start=self.pos))
 				self.advance()
@@ -185,16 +189,15 @@ class Lexer:
 			elif self.current_char == ')':
 				tokens.append(Token(RPAREN, pos_start=self.pos))
 				self.advance()
-			elif self.current_char == '=':
+			elif self.current_char == '==':
 				tokens.append(Token(EQUALS, pos_start=self.pos))
 				self.advance()
-
 			elif self.current_char == '=':
 				tokens.append(self.make_equals())
 			elif self.current_char == '<':
 				tokens.append(self.make_less_than())
 			elif self.current_char == '>':
-				tokens.append(self.make_greater_then())
+				tokens.append(self.make_greater_than())
 			elif self.current_char == '!':
 				tok, error = self.make_not_equals()
 				if error: return [], error
@@ -236,7 +239,6 @@ class Lexer:
 		tok_type = KEYWORD if id_str in KEYWORDS else IDENTIFIER #LCS
 		return Token(tok_type, id_str, pos_start, self.pos)
 
-
 	def make_not_equals(self):
 		pos_start = self.pos.copy()
 		self.advance()
@@ -244,7 +246,7 @@ class Lexer:
 		if self.current_char == '=':
 			self.advance()
 			return Token(NE, pos_start=pos_start, pos_end=self.pos), None
-		
+
 		self.advance()
 		return None, ExpectedCharError(pos_start, self.pos, "'=' (after '!') did you mean == ?")
 	
@@ -379,7 +381,7 @@ class Parser:
 		if not res.error and self.current_tok.type != EOF:
 			return res.failure(InvalidSyntaxError(
 				self.current_tok.pos_start, self.current_tok.pos_end,
-				"Expected '+', '-', '*', '/' or '^'"
+				"Expected '+', '-', '*', '/', '^', '==', '!=', '<', '>', <=', '>=', 'and' or 'or'"
 			))
 		return res
 
@@ -460,6 +462,8 @@ class Parser:
 				self.current_tok.pos_start, self.current_tok.pos_end,
 				"Expected int, float, identifier, '+', '-', '(' or 'not'"
 			))
+		
+		return res.success(node)
 
 	def expr(self):
 		res = ParseResult()
@@ -581,6 +585,41 @@ class Number:
 	def powed_by(self, other):
 		if isinstance(other, Number):
 			return Number(self.value ** other.value).set_context(self.context), None
+		
+	def get_comparison_eq(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value == other.value)).set_context(self.context), None
+
+	def get_comparison_ne(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value != other.value)).set_context(self.context), None
+
+	def get_comparison_lt(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value < other.value)).set_context(self.context), None
+
+	def get_comparison_gt(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value > other.value)).set_context(self.context), None
+
+	def get_comparison_lte(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value <= other.value)).set_context(self.context), None
+
+	def get_comparison_gte(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value >= other.value)).set_context(self.context), None
+
+	def anded_by(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value and other.value)).set_context(self.context), None
+
+	def ored_by(self, other):
+		if isinstance(other, Number):
+			return Number(int(self.value or other.value)).set_context(self.context), None
+
+	def notted(self):
+		return Number(1 if self.value == 0 else 0).set_context(self.context), None
 
 	def copy(self):
 		copy = Number(self.value)
@@ -681,7 +720,22 @@ class Interpreter:
 			result, error = left.div_by(right)
 		elif node.op_tok.type == POW:
 			result, error = left.powed_by(right)
-
+		elif node.op_tok.type == EE:
+			result, error = left.get_comparison_eq(right)
+		elif node.op_tok.type == NE:
+			result, error = left.get_comparison_ne(right)
+		elif node.op_tok.type == LT:
+			result, error = left.get_comparison_lt(right)
+		elif node.op_tok.type == GT:
+			result, error = left.get_comparison_gt(right)
+		elif node.op_tok.type == LTE:
+			result, error = left.get_comparison_lte(right)
+		elif node.op_tok.type == GTE:
+			result, error = left.get_comparison_gte(right)
+		elif node.op_tok.matches(KEYWORD, 'and'):
+			result, error = left.anded_by(right)
+		elif node.op_tok.matches(KEYWORD, 'or'):
+			result, error = left.ored_by(right)
 		if error:
 			return res.failure(error)
 		else:
@@ -696,6 +750,8 @@ class Interpreter:
 
 		if node.op_tok.type == MINUS:
 			number, error = number.multed_by(Number(-1))
+		elif node.op_tok.matches(KEYWORD, 'not'):
+			number, error = number.notted()
 
 		if error:
 			return res.failure(error)
@@ -707,7 +763,8 @@ class Interpreter:
 #######################################
 global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Number(0)) ### here we define null = 0
-
+global_symbol_table.set("False", Number(0))
+global_symbol_table.set("True", Number(1))
 
 def run(fn, text):
 	# Generate tokens
