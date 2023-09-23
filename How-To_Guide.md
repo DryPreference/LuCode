@@ -24,7 +24,7 @@ A lexter will go through every char and break it up into so called tokens so 2 +
 5. Update the Interpreter/visit_BinOpNode and add the binary operation
 
 
-### Adding Variables
+### Adding Variables 
 
 1. Update the Tokens (Identifier, Keyword, EQ)
 2. Updating the Lexer and add the TOKEN

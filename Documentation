@@ -50,6 +50,6 @@
 
 4. Parser - Syntax tree
 
-5. Token Class
+5. Token Class 
     __init__() function This is only used to initiate type_ and value these are going to be used later in this class and function
 
