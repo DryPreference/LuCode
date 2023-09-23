@@ -22,3 +22,6 @@
 
     - This version is the first version which can do simple arithmatic, with variables. We also updates the errormessages, and strings_with_arrows
       First official release!!!
+
+# version 1.5 
+    - This version implements logical operators and, or 
